@@ -3,6 +3,7 @@ const isFirefox = navigator.userAgent.includes("Firefox/");
 const subtitles = [];
 const matchers = [];
 let tab_url, url, site;
+console.log("start!");
 
 function flatten(arr) {
   if (!Array.isArray(arr)) return [];
@@ -57,6 +58,7 @@ function $() {
 }
 
 function extract_filename(url) {
+  console.log("extract filename: " + url)
   url = url.replace(/\?.+/, "");
   return url.substr(url.lastIndexOf("/")+1).replace(/[?#].*/, "");
 }
@@ -96,7 +98,8 @@ function parse_pt(pt) {
 
 function update_filename(fn) {
   // replace illegal characters
-  $("#filename").value = fn.replace(/[/\\:]/g, '-').replace(/["”´‘’]/g, "'").replace(/[*?<>|!]/g, '').replace(/\t+/, ' ');
+  console.log("update filename " + fn);
+  $("#filename").value = fn.replace(/[/\\:]/g, '-').replace(/["”´‘’]/g, "").replace(/[*?<>|!]/g, '').replace(/\t+/, '_-_');
 }
 
 function update_json_url(url) {
@@ -104,10 +107,10 @@ function update_json_url(url) {
   $("#open_json").classList.remove("d-none");
 }
 
-function call_func() {
+function call_func(objid) {
   let ret = site.re.exec(tab_url);
   if (ret) {
-    site.func(ret, url);
+    site.func(ret, url, objid);
   }
 }
 
@@ -357,6 +360,8 @@ function master_callback(length, base_url) {
 }
 
 document.addEventListener("DOMContentLoaded", function() {
+  console.clear();
+  console.debug("HER DA?!");
   $("#extension_version").textContent = version;
 
   $("#expand").addEventListener("click", function() {
@@ -440,9 +445,27 @@ document.addEventListener("DOMContentLoaded", function() {
       });
     });
   }
-
+  console.log("HHEEELLOOOO!!!");
+  browser.tabs.executeScript({
+    code: "document.querySelector('div[id=\"series-program-id-container\"]').attributes['data-program-id'].value"
+  }).then(results => {
+    console.log(results[0]);
+    call_func(results[0]);
+  });
   chrome.tabs.query({ active: true, lastFocusedWindow: true }, function(tabs) {
     tab_url = tabs[0].url;
+    /*
+    tabs[0].executeScript({
+      code: "content.document.querySelector('div[id=\"series-program-id-container\"]').attributes['data-program-id'].value"
+    }).then(results => {
+      console.log(results[0])
+    });
+    */
+    console.log(tabs);
+    console.log(tabs[0]);
+    console.log(chrome);
+    
+    console.log("¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤");
     if (!tab_url) {
       return;
     }
@@ -452,13 +475,17 @@ document.addEventListener("DOMContentLoaded", function() {
     }
     url = new URL(tab_url);
     $("#url").value = tab_url;
-    console.log(tab_url);
+    console.log(tab_url + "  <- tab_url");
+    console.log("before match");
 
     if (site = matchers.find(m => m.re.test(tab_url))) {
+      console.log("finner vi? ");
+      console.log(site);
       if (site.permissions) {
         chrome.permissions.contains(site.permissions, function(result) {
           if (result) {
-            call_func();
+            console.log("first call");
+            call_func(objid);
           }
           else {
             $("#copy").classList.add("d-none");
@@ -472,10 +499,12 @@ document.addEventListener("DOMContentLoaded", function() {
         return;
       }
       else {
+        console.log("in some else");
         call_func();
       }
     }
     else {
+      console.log("nope")
       error("Fel: Den här hemsidan stöds ej.");
     }
   });
